@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@OpenAPIDefinition(info = @Info(title = "User Service API", version = "v1"), security = @SecurityRequirement(name = "bearerAuth"), servers = @Server(url = "http://localhost:8080", description = "API Gateway"))
+@OpenAPIDefinition(info = @Info(title = "User Service API", version = "v1"), security = @SecurityRequirement(name = "bearerAuth"), servers = @Server(url = "http://localhost:8084", description = "User Service"))
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
 public class OpenApiConfig {
 }
