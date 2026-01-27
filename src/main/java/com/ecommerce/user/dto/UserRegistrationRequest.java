@@ -22,6 +22,6 @@ public class UserRegistrationRequest {
     @NotBlank(message = "Phone number is required")
     private String phoneNumber;
 
-    @NotBlank(message = "Role is required (CUSTOMER, MERCHANT, ADMIN)")
+    @NotBlank(message = "Role is required")
     private String role;
 }
