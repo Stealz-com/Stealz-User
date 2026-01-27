@@ -20,15 +20,43 @@ public class UserService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final PasswordEncoder passwordEncoder;
-    
+
     private static final String USER_EVENTS_TOPIC = "user-events";
     private static final String EMAIL_VERIFICATION_TOPIC = "emailVerificationTopic";
 
-    public String registerUser(User credential) {
-        if (userRepository.findByEmail(credential.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email " + credential.getEmail() + " already exists");
+    public String registerUser(com.ecommerce.user.dto.UserRegistrationRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("User with email " + request.getEmail() + " already exists");
         }
-        credential.setPassword(passwordEncoder.encode(credential.getPassword()));
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("User with username " + request.getUsername() + " already exists");
+        }
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Password and Confirm Password do not match");
+        }
+
+        User credential = new User();
+        credential.setUsername(request.getUsername());
+        credential.setEmail(request.getEmail());
+        credential.setPassword(passwordEncoder.encode(request.getPassword()));
+        credential.setPhoneNumber(request.getPhoneNumber());
+
+        // Handle Role
+        try {
+            credential.setRole(com.ecommerce.user.entity.UserRole.valueOf(request.getRole().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid role. Allowed roles: ADMIN, MERCHANT, CUSTOMER");
+        }
+
+        // Handle Full Name
+        if (request.getFullName() != null) {
+            String[] parts = request.getFullName().trim().split("\\s+", 2);
+            credential.setFirstName(parts[0]);
+            if (parts.length > 1) {
+                credential.setLastName(parts[1]);
+            }
+        }
+
         credential.setVerified(false);
         credential.setCreatedAt(System.currentTimeMillis());
         String token = UUID.randomUUID().toString();
@@ -40,7 +68,8 @@ public class UserService {
             String message = credential.getEmail() + "," + token + "," + credential.getUsername();
             kafkaTemplate.send(EMAIL_VERIFICATION_TOPIC, message);
         } catch (Exception e) {
-            System.err.println("Warning: Could not send Kafka email verification event. Kafka might be down. " + e.getMessage());
+            System.err.println(
+                    "Warning: Could not send Kafka email verification event. Kafka might be down. " + e.getMessage());
         }
 
         return "Registration successful! Please check your email to verify your account.";
@@ -52,15 +81,15 @@ public class UserService {
         user.setVerified(true);
         user.setVerificationToken(null);
         userRepository.save(user);
-        
+
         // Return HTML response for better user experience
         return "<html>" +
-               "<body style='text-align:center; font-family: Arial, sans-serif; padding-top: 50px;'>" +
-               "<h1 style='color:green;'>Verification Successful!</h1>" +
-               "<p>Your email has been verified successfully.</p>" +
-               "<p>You can now close this window and log in to the application.</p>" +
-               "</body>" +
-               "</html>";
+                "<body style='text-align:center; font-family: Arial, sans-serif; padding-top: 50px;'>" +
+                "<h1 style='color:green;'>Verification Successful!</h1>" +
+                "<p>Your email has been verified successfully.</p>" +
+                "<p>You can now close this window and log in to the application.</p>" +
+                "</body>" +
+                "</html>";
     }
 
     public List<User> getAllUsers() {
@@ -79,7 +108,7 @@ public class UserService {
 
     public User updateUser(Long id, User updatedUser) {
         User existingUser = getUserById(id);
-        
+
         if (updatedUser.getFirstName() != null) {
             existingUser.setFirstName(updatedUser.getFirstName());
         }
@@ -92,9 +121,9 @@ public class UserService {
         if (updatedUser.getAddress() != null) {
             existingUser.setAddress(updatedUser.getAddress());
         }
-        
+
         User savedUser = userRepository.save(existingUser);
-        
+
         // Publish User Updated Event
         try {
             String userJson = objectMapper.writeValueAsString(savedUser);
@@ -102,12 +131,33 @@ public class UserService {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        
+
         return savedUser;
     }
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
         kafkaTemplate.send(USER_EVENTS_TOPIC, "USER_DELETED", String.valueOf(id));
+    }
+
+    public com.ecommerce.user.dto.UserDetailResponse validateUserCredentials(
+            com.ecommerce.user.dto.UserLoginRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        if (!user.isVerified()) {
+            throw new RuntimeException("User is not verified. Please verify your email first.");
+        }
+
+        return com.ecommerce.user.dto.UserDetailResponse.builder()
+                .userId(user.getId())
+                .isVerified(user.isVerified())
+                .userType(user.getRole().name())
+                .email(user.getEmail())
+                .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.ecommerce.user.controller;
 
+import com.ecommerce.user.dto.UserLoginRequest;
 import com.ecommerce.user.dto.UserRegistrationRequest;
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.entity.UserRole;
@@ -19,34 +20,26 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
-        user.setPhoneNumber(request.getPhoneNumber());
+    public ResponseEntity<com.ecommerce.user.dto.ApiResponse<String>> registerUser(
+            @Valid @RequestBody UserRegistrationRequest request) {
+        String result = userService.registerUser(request);
+        return ResponseEntity.ok(new com.ecommerce.user.dto.ApiResponse<>(true, 200, result, null));
+    }
 
-        // Set Role
-        try {
-            user.setRole(UserRole.valueOf(request.getRole().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid role. Allowed roles: ADMIN, MERCHANT, CUSTOMER");
-        }
-
-        // Split full name into first and last name
-        if (request.getFullName() != null) {
-            String[] parts = request.getFullName().trim().split("\\s+", 2);
-            user.setFirstName(parts[0]);
-            if (parts.length > 1) {
-                user.setLastName(parts[1]);
-            }
-        }
-
-        return ResponseEntity.ok(userService.registerUser(user));
+    @PostMapping("/validate")
+    public ResponseEntity<com.ecommerce.user.dto.ApiResponse<com.ecommerce.user.dto.UserDetailResponse>> validateUser(
+            @Valid @RequestBody UserLoginRequest request) {
+        com.ecommerce.user.dto.UserDetailResponse response = userService.validateUserCredentials(request);
+        return ResponseEntity.ok(new com.ecommerce.user.dto.ApiResponse<>(
+                true,
+                200,
+                "User validated successfully",
+                response));
     }
 
     @GetMapping("/verify")
     public ResponseEntity<String> verifyUser(@RequestParam("token") String token) {
+        // Returning String HTML as originally implemented for browser feedback
         return ResponseEntity.ok(userService.verifyUser(token));
     }
 
@@ -61,13 +54,23 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(id, user));
+    public ResponseEntity<com.ecommerce.user.dto.ApiResponse<User>> updateUser(@PathVariable Long id,
+            @RequestBody User user) {
+        User updatedUser = userService.updateUser(id, user);
+        return ResponseEntity.ok(new com.ecommerce.user.dto.ApiResponse<>(
+                true,
+                200,
+                "User updated successfully",
+                updatedUser));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<com.ecommerce.user.dto.ApiResponse<String>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.ok(new com.ecommerce.user.dto.ApiResponse<>(
+                true,
+                200,
+                "User deleted successfully",
+                null));
     }
 }

@@ -16,6 +16,9 @@ public class UserRegistrationRequest {
     @NotBlank(message = "Password is required")
     private String password;
 
+    @NotBlank(message = "Confirm Password is required")
+    private String confirmPassword;
+
     @NotBlank(message = "Full name is required")
     private String fullName;
 
