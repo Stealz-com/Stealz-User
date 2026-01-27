@@ -19,17 +19,12 @@ import org.springframework.security.web.SecurityFilterChain;
 public class AuthConfig {
 
     @Bean
-    public UserDetailsService userDetailsService(com.ecommerce.user.repository.UserRepository repository) {
-        return new CustomUserDetailsService(repository);
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authProvider)
             throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authProvider)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/users/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated());
         return http.build();
     }
