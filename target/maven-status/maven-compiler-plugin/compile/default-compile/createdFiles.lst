@@ -1,0 +1,14 @@
+com\ecommerce\user\entity\User$UserBuilder.class
+com\ecommerce\user\exception\UserNotVerifiedException.class
+com\ecommerce\user\dto\UserRegistrationRequest.class
+com\ecommerce\user\dto\AuthRequest.class
+com\ecommerce\user\service\UserService.class
+com\ecommerce\user\controller\UserController.class
+com\ecommerce\user\UserServiceApplication.class
+com\ecommerce\user\config\AuthConfig.class
+com\ecommerce\user\exception\GlobalExceptionHandler.class
+com\ecommerce\user\entity\User.class
+com\ecommerce\user\repository\UserRepository.class
+com\ecommerce\user\config\OpenApiConfig.class
+com\ecommerce\user\config\CustomUserDetailsService.class
+com\ecommerce\user\config\CustomUserDetails.class
