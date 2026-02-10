@@ -21,10 +21,12 @@ public class User {
     private Long id;
 
     @NotBlank(message = "Username is required")
+    @Column(unique = true)
     private String username;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
+    @Column(unique = true)
     private String email;
 
     @NotBlank(message = "Password is required")

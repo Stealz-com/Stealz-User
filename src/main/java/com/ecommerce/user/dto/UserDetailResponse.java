@@ -14,4 +14,6 @@ public class UserDetailResponse {
     private boolean isVerified;
     private String userType;
     private String email;
+    private String accessToken;
+    private String refreshToken;
 }

@@ -3,7 +3,6 @@ package com.ecommerce.user.controller;
 import com.ecommerce.user.dto.UserLoginRequest;
 import com.ecommerce.user.dto.UserRegistrationRequest;
 import com.ecommerce.user.entity.User;
-import com.ecommerce.user.entity.UserRole;
 import com.ecommerce.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +37,11 @@ public class UserController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyUser(@RequestParam("token") String token) {
+    public ResponseEntity<String> verifyUser(@RequestParam("token") String token,
+            @RequestParam("email") String email,
+            @RequestParam("usertype") String usertype) {
         // Returning String HTML as originally implemented for browser feedback
-        return ResponseEntity.ok(userService.verifyUser(token));
+        return ResponseEntity.ok(userService.verifyUser(token, email, usertype));
     }
 
     @GetMapping

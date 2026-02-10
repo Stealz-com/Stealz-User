@@ -1,10 +1,13 @@
 package com.ecommerce.user.service;
 
 import com.ecommerce.user.entity.User;
+import com.ecommerce.user.exception.InvalidCredentialsException;
+import com.ecommerce.user.exception.UserNotFoundException;
 import com.ecommerce.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +17,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -25,11 +29,14 @@ public class UserService {
     private static final String EMAIL_VERIFICATION_TOPIC = "emailVerificationTopic";
 
     public String registerUser(com.ecommerce.user.dto.UserRegistrationRequest request) {
+        log.info("Initiating registration for user: {}", request.getUsername());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email " + request.getEmail() + " already exists");
+            throw new com.ecommerce.user.exception.UserAlreadyExistsException(
+                    "User with email " + request.getEmail() + " already exists");
         }
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("User with username " + request.getUsername() + " already exists");
+            throw new com.ecommerce.user.exception.UserAlreadyExistsException(
+                    "User with username " + request.getUsername() + " already exists");
         }
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Password and Confirm Password do not match");
@@ -61,11 +68,13 @@ public class UserService {
         credential.setCreatedAt(System.currentTimeMillis());
         String token = UUID.randomUUID().toString();
         credential.setVerificationToken(token);
+        log.info("Saving user credential with verification token: {}", request.getEmail());
         userRepository.save(credential);
 
         // Send Kafka event for email verification
         try {
-            String message = credential.getEmail() + "," + token + "," + credential.getUsername();
+            String message = credential.getEmail() + "," + token + "," + credential.getUsername() + ","
+                    + credential.getRole().name();
             kafkaTemplate.send(EMAIL_VERIFICATION_TOPIC, message);
         } catch (Exception e) {
             System.err.println(
@@ -75,9 +84,16 @@ public class UserService {
         return "Registration successful! Please check your email to verify your account.";
     }
 
-    public String verifyUser(String token) {
+    public String verifyUser(String token, String email, String usertype) {
+        log.info("Verifying user: {}", email);
         User user = userRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+
+        // Optional: cross-verify email
+        if (!user.getEmail().equals(email)) {
+            throw new RuntimeException("Email mismatch for this verification token");
+        }
+
         user.setVerified(true);
         user.setVerificationToken(null);
         userRepository.save(user);
@@ -103,10 +119,11 @@ public class UserService {
 
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
     }
 
     public User updateUser(Long id, User updatedUser) {
+        log.info("Updating user profile for ID: {}", id);
         User existingUser = getUserById(id);
 
         if (updatedUser.getFirstName() != null) {
@@ -142,11 +159,12 @@ public class UserService {
 
     public com.ecommerce.user.dto.UserDetailResponse validateUserCredentials(
             com.ecommerce.user.dto.UserLoginRequest request) {
+        log.info("Validating credentials for user: {}", request.getUsername());
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new InvalidCredentialsException("Invalid password");
         }
 
         if (!user.isVerified()) {

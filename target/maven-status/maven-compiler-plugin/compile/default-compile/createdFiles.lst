@@ -1,6 +1,7 @@
-com\ecommerce\user\entity\User$UserBuilder.class
+com\ecommerce\user\exception\UserAlreadyExistsException.class
 com\ecommerce\user\exception\UserNotVerifiedException.class
 com\ecommerce\user\dto\UserRegistrationRequest.class
+com\ecommerce\user\util\JwtService.class
 com\ecommerce\user\dto\UserLoginRequest.class
 com\ecommerce\user\service\UserService.class
 com\ecommerce\user\controller\UserController.class
@@ -12,10 +13,13 @@ com\ecommerce\user\entity\UserRole.class
 com\ecommerce\user\repository\UserRepository.class
 com\ecommerce\user\config\OpenApiConfig.class
 com\ecommerce\user\dto\ApiResponse.class
+com\ecommerce\user\dto\ErrorResponse.class
+com\ecommerce\user\config\CustomUserDetails.class
+com\ecommerce\user\entity\User$UserBuilder.class
+com\ecommerce\user\exception\InvalidCredentialsException.class
+com\ecommerce\user\exception\UserNotFoundException.class
 com\ecommerce\user\config\CustomUserDetailsService.class
 com\ecommerce\user\dto\UserDetailResponse.class
-com\ecommerce\user\dto\ErrorResponse.class
 com\ecommerce\user\dto\ApiResponse$ApiResponseBuilder.class
-com\ecommerce\user\config\CustomUserDetails.class
 com\ecommerce\user\dto\ErrorResponse$ErrorResponseBuilder.class
 com\ecommerce\user\dto\UserDetailResponse$UserDetailResponseBuilder.class

@@ -24,7 +24,8 @@ public class AuthConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authProvider)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/**", "/v3/api-docs/**", "/swagger-ui/**")
+                        .permitAll()
                         .anyRequest().authenticated());
         return http.build();
     }

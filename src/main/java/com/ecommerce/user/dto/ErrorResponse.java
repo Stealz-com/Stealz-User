@@ -13,16 +13,16 @@ import java.util.List;
 @NoArgsConstructor
 public class ErrorResponse {
     private boolean success;
+    private int httpCode;
     private String message;
-    private String errorCode;
-    private List<String> errors;
     private LocalDateTime timestamp;
+    private List<String> errors;
 
-    public ErrorResponse(String message, String errorCode, List<String> errors) {
+    public ErrorResponse(int httpCode, String message, List<String> errors) {
         this.success = false;
+        this.httpCode = httpCode;
         this.message = message;
-        this.errorCode = errorCode;
-        this.errors = errors;
         this.timestamp = LocalDateTime.now();
+        this.errors = errors;
     }
 }
