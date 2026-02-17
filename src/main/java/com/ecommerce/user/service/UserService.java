@@ -1,8 +1,10 @@
 package com.ecommerce.user.service;
 
+import com.ecommerce.user.entity.Address;
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.exception.InvalidCredentialsException;
 import com.ecommerce.user.exception.UserNotFoundException;
+import com.ecommerce.user.repository.AddressRepository;
 import com.ecommerce.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final AddressRepository addressRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final PasswordEncoder passwordEncoder;
@@ -155,6 +158,59 @@ public class UserService {
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
         kafkaTemplate.send(USER_EVENTS_TOPIC, "USER_DELETED", String.valueOf(id));
+    }
+
+    // Address Management
+    public List<Address> getUserAddresses(Long userId) {
+        return addressRepository.findByUserId(userId);
+    }
+
+    public Address addAddress(Long userId, Address address) {
+        User user = getUserById(userId);
+        address.setUser(user);
+        if (address.isDefault()) {
+            // Unset other defaults
+            List<Address> addresses = addressRepository.findByUserId(userId);
+            addresses.forEach(a -> {
+                if (a.isDefault()) {
+                    a.setDefault(false);
+                    addressRepository.save(a);
+                }
+            });
+        }
+        return addressRepository.save(address);
+    }
+
+    public Address updateAddress(Long addressId, Address updatedAddress) {
+        Address existingAddress = addressRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+
+        existingAddress.setFullName(updatedAddress.getFullName());
+        existingAddress.setAddressLine(updatedAddress.getAddressLine());
+        existingAddress.setCity(updatedAddress.getCity());
+        existingAddress.setState(updatedAddress.getState());
+        existingAddress.setZipCode(updatedAddress.getZipCode());
+        existingAddress.setPhone(updatedAddress.getPhone());
+
+        if (updatedAddress.isDefault() && !existingAddress.isDefault()) {
+            // Unset other defaults
+            List<Address> addresses = addressRepository.findByUserId(existingAddress.getUser().getId());
+            addresses.forEach(a -> {
+                if (a.isDefault()) {
+                    a.setDefault(false);
+                    addressRepository.save(a);
+                }
+            });
+            existingAddress.setDefault(true);
+        } else if (!updatedAddress.isDefault()) {
+            existingAddress.setDefault(false);
+        }
+
+        return addressRepository.save(existingAddress);
+    }
+
+    public void deleteAddress(Long addressId) {
+        addressRepository.deleteById(addressId);
     }
 
     public com.ecommerce.user.dto.UserDetailResponse validateUserCredentials(

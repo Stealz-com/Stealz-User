@@ -2,6 +2,7 @@ package com.ecommerce.user.controller;
 
 import com.ecommerce.user.dto.UserLoginRequest;
 import com.ecommerce.user.dto.UserRegistrationRequest;
+import com.ecommerce.user.entity.Address;
 import com.ecommerce.user.entity.User;
 import com.ecommerce.user.service.UserService;
 import jakarta.validation.Valid;
@@ -73,5 +74,27 @@ public class UserController {
                 200,
                 "User deleted successfully",
                 null));
+    }
+
+    // Address Endpoints
+    @GetMapping("/{userId}/addresses")
+    public ResponseEntity<List<Address>> getUserAddresses(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserAddresses(userId));
+    }
+
+    @PostMapping("/{userId}/addresses")
+    public ResponseEntity<Address> addAddress(@PathVariable Long userId, @RequestBody Address address) {
+        return ResponseEntity.ok(userService.addAddress(userId, address));
+    }
+
+    @PutMapping("/addresses/{addressId}")
+    public ResponseEntity<Address> updateAddress(@PathVariable Long addressId, @RequestBody Address address) {
+        return ResponseEntity.ok(userService.updateAddress(addressId, address));
+    }
+
+    @DeleteMapping("/addresses/{addressId}")
+    public ResponseEntity<Void> deleteAddress(@PathVariable Long addressId) {
+        userService.deleteAddress(addressId);
+        return ResponseEntity.noContent().build();
     }
 }
